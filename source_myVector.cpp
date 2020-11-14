@@ -5,6 +5,8 @@
 #include <chrono>
 #include <utility>
 
+#define OutOfRangeException 1
+
 using std::cout;
 using std::endl;
 using std::string;
@@ -35,6 +37,8 @@ private:
 	T* data;
 	int length;
 public:
+	enum exceptions {NoSpaceForData};
+
 	myVector() { data = nullptr; length = 0; } // prazdny konstruktor
 	myVector(int length, T defaultValue); // kostruktor s parametrami
 	~myVector() { delete[] data; } //destruktor
@@ -55,11 +59,19 @@ public:
 template<class T>
 myVector<T>::myVector(int length, T defaultValue)
 {
-	this->length = length;
-	data = new T[length];
+	try
+	{
+		data = new T[length]; // skusi allokovat miesto
+	}
+	catch (std::bad_alloc error)
+	{
+		throw exceptions::NoSpaceForData; // ak sa nenajde, tak je vrati exception?
+	}
 
+	this->length = length; // priradenie dlzky vektora
+	
 	for (int i = 0; i < this->length, i++)
-		data[i] = defaultValue;
+		data[i] = defaultValue; // naplnenie vektora defaultnymi hodnotami
 }
 
 template<class T>
