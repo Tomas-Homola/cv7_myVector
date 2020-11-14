@@ -23,7 +23,7 @@ public:
 
 	static void print(string s)
 	{
-		cout << std::fixed << std::setprecision(2) << s << std::chrono::duration<double, std::milli>(t_end - t_start).count() << "ms/n";
+		cout << std::fixed << std::setprecision(2) << s << std::chrono::duration<double, std::milli>(t_end - t_start).count() << "ms/n" << endl;
 	}
 };
 
@@ -63,7 +63,7 @@ myVector<T>::myVector(int length, T defaultValue)
 	}
 	catch (std::bad_alloc error)
 	{
-		cout << "Not enough memory" << endl; // ak sa nenajde, tak je vrati exception?
+		cout << "Allocation failed" << endl; // ak sa nenajde, tak je vrati exception?
 		delete[] data;
 		return;
 	}
@@ -87,7 +87,7 @@ void myVector<T>::resize(int newLength)
 	}
 	catch (std::bad_alloc error)
 	{
-		cout << "Not enough memory" << endl;
+		cout << "Allocation failed" << endl;
 		delete[] newData;
 		return;
 	}
@@ -116,16 +116,48 @@ void myVector<T>::resize(int newLength)
 template<class T>
 T& myVector<T>::at(int index)
 {
-	if (index < 0 || index >= length)
-		throw OutOfRangeException; // ak je zadany zly index, tak hodi exception
+	try
+	{
+		if (index < 0 || index >= length)
+			throw OutOfRangeException; // ak je zadany zly index, tak hodi exception
+	}
+	catch (int error)
+	{
+		if (error == OutOfRangeException)
+			cout << "Incorrect index" << endl;
+	}
 
 	return data[index];
 }
 
 
 template<class T>
-void myVector<T>::push_back(T newValue)
+void myVector<T>::push_back(const T newValue) // toto je vypoctovo narocne
 {
+	T* newData = nullptr;
+	int temp = length + 1;
+	try
+	{
+		newData = new T[temp];
+	}
+	catch (std::bad_alloc)
+	{
+		cout << "Allocation failed" << endl;
+		delete[] newData;
+		return;
+	}
+
+	for (int i = 0; i < length + 1; i++)
+	{
+		if (i != length)
+			newData[i] = data[i]; // prekopirovanie zo stareho pointera do noveho pointera
+		else
+			newData[i] = newValue; // pridanie novej hodnoty na posledne miesto v newData, cize na index length, lebo celu dlzku ma length + 1
+	}
+
+	delete[] data; // deallokacia starych dat
+	data = newData; // priradenie noveho pointera s novymi datami, kde je aj ta nova hodnota
+	length = length + 1; // zvysenie dlzky vektora o 1
 }
 
 template<class T>
@@ -136,12 +168,14 @@ void myVector<T>::clear()
 
 	delete[] data; // deallokacia miesta
 	data = nullptr; // pointer nebude ukazovat na nijake miesto
+
+	cout << "clear done" << endl;
 }
 
 template<class T>
 void myVector<T>::printData()
 {
-	cout << "myVektor = (";
+	cout << "myVector = (";
 
 	for (int i = 0; i < length; i++)
 	{
@@ -156,11 +190,60 @@ void myVector<T>::printData()
 
 int main()
 {
-	myVector<int> vector(10, 1);
-	vector.printData();
+	int tempSum = 0;
 
-	vector.resize(14);
-	vector.printData();
+	cout << "Class myVector:" << endl;
 
+	Timer::start();
+	myVector<int> vector(10000000, 1);
+	//vector.printData();
+	for (int i = 0; i < vector.Length(); i++)
+		tempSum += vector[i];
+
+	cout << "Suma prvkov myVector: " << tempSum << endl;
+
+	vector.resize(20000000);
+	cout << "resize done" << endl;
+	//vector.printData();
+
+	//cout << "Begin: " << vector.begin() << endl << "End: " << vector.end() << endl << "Index = 3: " << vector[3] << endl << "At(13): " << vector.at(13) << endl;
+
+	/*try
+	{
+		vector.at(vector.Length() + 1);
+	}
+	catch (int error)
+	{
+		if (error == OutOfRangeException)
+			cout << "Zle zadany index" << endl;
+	}*/
+
+	//vector.at(vector.Length() + 1);
+
+	for (int i = 0; i < 101; i++)
+		vector.push_back(5);
+	//vector.printData();
+	
+	Timer::end("\nCas trvania pre Class myVector: ");
+
+	tempSum = 0;
+
+	cout << "Class vector:" << endl;
+
+	Timer::start();
+	std::vector<int> vector2(10000000, 1);
+
+	for (int i = 0; i < vector2.capacity(); i++)
+		tempSum += vector2.at(i);
+
+	cout << "Suma prvkov vector: " << tempSum << endl;
+	
+	vector2.resize(20000000);
+	cout << "resize done" << endl;
+
+	for (int i = 0; i < 101; i++)
+		vector2.push_back(5);
+
+	Timer::end("\nCas trvania pre Class vector: ");
 	return 0;
 }
