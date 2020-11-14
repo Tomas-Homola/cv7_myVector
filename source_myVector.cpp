@@ -37,8 +37,6 @@ private:
 	T* data;
 	int length;
 public:
-	enum exceptions {NoSpaceForData};
-
 	myVector() { data = nullptr; length = 0; } // prazdny konstruktor
 	myVector(int length, T defaultValue); // kostruktor s parametrami
 	~myVector() { delete[] data; } //destruktor
@@ -47,7 +45,7 @@ public:
 
 	void resize(int newLength);
 	T& at(int index);
-	T& operator [](int index);
+	T& operator [](int index) { return data[index]; }
 	void push_back(T newValue);
 	T& begin() { return data[0]; }
 	T& end() { return data[length - 1]; }
@@ -65,34 +63,65 @@ myVector<T>::myVector(int length, T defaultValue)
 	}
 	catch (std::bad_alloc error)
 	{
-		throw exceptions::NoSpaceForData; // ak sa nenajde, tak je vrati exception?
+		cout << "Not enough memory" << endl; // ak sa nenajde, tak je vrati exception?
+		delete[] data;
+		return;
 	}
+
+	//cout << "Allocation successful" << endl;
 
 	this->length = length; // priradenie dlzky vektora
 	
-	for (int i = 0; i < this->length, i++)
+	for (int i = 0; i < this->length; i++)
 		data[i] = defaultValue; // naplnenie vektora defaultnymi hodnotami
 }
 
 template<class T>
 void myVector<T>::resize(int newLength)
 {
-	T* newData = new T[newLength];
+	T* newData = nullptr;
+	
+	try
+	{
+		newData = new T[newLength];
+	}
+	catch (std::bad_alloc error)
+	{
+		cout << "Not enough memory" << endl;
+		delete[] newData;
+		return;
+	}
+	
+	//cout << "Allocation successful" << endl;
 
+	if (length >= newLength) // > / >= ?
+	{
+		for (int i = 0; i < newLength; i++)
+			newData[i] = data[i]; // prekopiruju sa iba tie data, co sa zmestia do noveho vektora
+	}
+	else if (length < newLength)
+	{
+		for (int i = 0; i < length; i++)
+			newData[i] = data[i]; // prekopiruju sa vsetky data, nejake miesta v novom vektore budu prazdne
 
+		for (int i = length; i < newLength; i++)
+			newData[i] = NULL; // zvysne miesta sa zaplnia ako NULL
+	}
+
+	delete[] data; // deallokuje sa miesto, kde ukazuje smernik data
+	data = newData; // smernik newData sa priradi do zmernika data, cize data bude ukazovat na nove miesto v pamati
+	length = newLength; // zmena starej length na newLength
 }
 
 template<class T>
 T& myVector<T>::at(int index)
 {
-	// TODO: insert return statement here
+	if (index < 0 || index >= length)
+		throw OutOfRangeException; // ak je zadany zly index, tak hodi exception
+
+	return data[index];
 }
 
-template<class T>
-T& myVector<T>::operator[](int index)
-{
-	// TODO: insert return statement here
-}
 
 template<class T>
 void myVector<T>::push_back(T newValue)
@@ -102,9 +131,36 @@ void myVector<T>::push_back(T newValue)
 template<class T>
 void myVector<T>::clear()
 {
+	for (int i = 0; i < length; i++)
+		data[i] = NULL; // priradenie NULL hodnoty namiesto ulozenych hodnot
+
+	delete[] data; // deallokacia miesta
+	data = nullptr; // pointer nebude ukazovat na nijake miesto
 }
 
 template<class T>
 void myVector<T>::printData()
 {
+	cout << "myVektor = (";
+
+	for (int i = 0; i < length; i++)
+	{
+		if (i + 1 != length)
+			cout << data[i] << ", ";
+		else
+			cout << data[i];
+	}
+
+	cout << ")" << endl;
+}
+
+int main()
+{
+	myVector<int> vector(10, 1);
+	vector.printData();
+
+	vector.resize(14);
+	vector.printData();
+
+	return 0;
 }
